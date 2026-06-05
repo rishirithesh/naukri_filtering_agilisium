@@ -428,7 +428,7 @@ export default function RecruiterDashboard() {
       <div style={S.uploadScreen}>
         <div style={S.uploadCard}>
           <div style={S.logoMark}>⬡</div>
-          <h1 style={S.uploadTitle}>Naukri Recruiter</h1>
+          <h1 style={S.uploadTitle}>Naukri Candidate Filtering</h1>
           <p style={S.uploadSub}>Upload your candidate export to get started</p>
           <input
             ref={fileInputRef}
@@ -470,7 +470,7 @@ export default function RecruiterDashboard() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={S.logoMark}>⬡</span>
           <div>
-            <div style={S.appName}>Naukri Recruiter</div>
+            <div style={S.appName}>Naukri Candidate Filtering</div>
             <div style={{ fontSize: 11, color: "#3a5a7a", letterSpacing: "0.05em" }}>CANDIDATE INTELLIGENCE PLATFORM</div>
           </div>
         </div>
