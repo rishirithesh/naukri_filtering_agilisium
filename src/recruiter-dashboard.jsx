@@ -427,7 +427,7 @@ export default function RecruiterDashboard() {
     return (
       <div style={S.uploadScreen}>
         <div style={S.uploadCard}>
-          <div style={S.logoMark}>⬡</div>
+          <div style={S.logoMark}>Agilisium Consulting</div>
           <h1 style={S.uploadTitle}>Naukri Sheet Filtering</h1>
           <p style={S.uploadSub}>Upload your candidate export to get started</p>
           <input
@@ -468,7 +468,7 @@ export default function RecruiterDashboard() {
       {/* ── Header ── */}
       <header style={S.header}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={S.logoMark}>⬡</span>
+          <span style={S.logoMark}>Agilisium</span>
           <div>
             <div style={S.appName}>Naukri Sheet Filtering</div>
             <div style={{ fontSize: 11, color: "#3a5a7a", letterSpacing: "0.05em" }}>CANDIDATE FILTERING PLATFORM</div>
