@@ -17,16 +17,21 @@ const TABLE_COLS = [
   { key: "Role", label: "Role", width: 200 },
   { key: "Department", label: "Department", width: 180 },
   { key: "Industry", label: "Industry", width: 180 },
-  { key: "Current Location", label: "Location", width: 130 },
-  { key: "Total Experience", label: "Experience", width: 130 },
-  { key: "Key Skills", label: "Key Skills", width: 260 },
-  { key: "Annual Salary", label: "Salary", width: 120 },
-  { key: "Notice period/ Availability to join", label: "Notice Period", width: 140 },
-  { key: "Under Graduation degree", label: "UG Degree", width: 150 },
-  { key: "Post graduation degree", label: "PG Degree", width: 150 },
-  { key: "Email ID", label: "Email", width: 200 },
-  { key: "Phone Number", label: "Phone", width: 130 },
+  { key: "Current Location", label: "Location", width: 150 },
+  { key: "Total Experience", label: "Experience", width: 150 },
+  { key: "Key Skills", label: "Key Skills", width: 280 },
+  { key: "Annual Salary", label: "Salary", width: 140 },
+  { key: "Notice period/ Availability to join", label: "Notice Period", width: 170 },
+  { key: "Under Graduation degree", label: "UG Degree", width: 180 },
+  { key: "Post graduation degree", label: "PG Degree", width: 180 },
+  { key: "Email ID", label: "Email", width: 220 },
+  { key: "Phone Number", label: "Phone", width: 150 },
 ];
+
+const INITIAL_COLUMN_FILTERS = TABLE_COLS.reduce((acc, col) => {
+  acc[col.key] = "";
+  return acc;
+}, {});
 
 const ROW_HEIGHT = 52;
 const OVERSCAN = 8;
@@ -189,8 +194,9 @@ function MultiSelectDropdown({ label, options, selected, onChange }) {
 }
 
 // ─── Virtualized Table ────────────────────────────────────────────────────────
-function VirtualTable({ rows, visibleCols }) {
-  const containerRef = useRef(null);
+function VirtualTable({ rows, visibleCols, columnFilters, onColumnFilterChange }) {
+  const headerRef = useRef(null);
+  const bodyRef = useRef(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [containerH, setContainerH] = useState(600);
 
@@ -198,7 +204,7 @@ function VirtualTable({ rows, visibleCols }) {
     const ro = new ResizeObserver((entries) => {
       if (entries[0]) setContainerH(entries[0].contentRect.height);
     });
-    if (containerRef.current) ro.observe(containerRef.current);
+    if (bodyRef.current) ro.observe(bodyRef.current);
     return () => ro.disconnect();
   }, []);
 
@@ -212,7 +218,9 @@ function VirtualTable({ rows, visibleCols }) {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
       {/* Header */}
-      <div style={{ overflowX: "auto", flexShrink: 0 }}>
+      <div ref={headerRef} style={{ overflowX: "auto", flexShrink: 0 }} onScroll={(e) => {
+        if (bodyRef.current) bodyRef.current.scrollLeft = e.target.scrollLeft;
+      }}>
         <div style={{
           display: "flex", minWidth: totalWidth,
           background: "#0a1628", borderBottom: "2px solid #1e3a5f",
@@ -229,11 +237,36 @@ function VirtualTable({ rows, visibleCols }) {
             </div>
           ))}
         </div>
+        <div style={{
+          display: "flex", minWidth: totalWidth,
+          background: "#07111f", borderBottom: "1px solid #1b364f",
+        }}>
+          {visibleCols.map((col) => (
+            <div key={col.key} style={{
+              width: col.width, minWidth: col.width, padding: "8px 14px",
+              flexShrink: 0,
+            }}>
+              <input
+                value={columnFilters[col.key] ?? ""}
+                onChange={(e) => onColumnFilterChange(col.key, e.target.value)}
+                placeholder="Filter..."
+                style={{
+                  width: "100%", background: "#081523", border: "1px solid #1f3a59",
+                  borderRadius: 6, padding: "7px 10px", color: "#e2eaf4",
+                  fontSize: 12, fontFamily: "'DM Sans', sans-serif", outline: "none",
+                }}
+              />
+            </div>
+          ))}
+        </div>
       </div>
       {/* Body */}
       <div
-        ref={containerRef}
-        onScroll={(e) => setScrollTop(e.target.scrollTop)}
+        ref={bodyRef}
+        onScroll={(e) => {
+          setScrollTop(e.target.scrollTop);
+          if (headerRef.current) headerRef.current.scrollLeft = e.target.scrollLeft;
+        }}
         style={{ flex: 1, overflowY: "auto", overflowX: "auto", position: "relative" }}
       >
         <div style={{ height: totalHeight, minWidth: totalWidth, position: "relative" }}>
@@ -300,6 +333,7 @@ export default function RecruiterDashboard() {
     Department: [], Role: [], Industry: [],
     "Under Graduation degree": [], "UG University/institute Name": [], "Post graduation degree": [],
   });
+  const [columnFilters, setColumnFilters] = useState(INITIAL_COLUMN_FILTERS);
   const [skillInput, setSkillInput] = useState("");
   const [globalSearch, setGlobalSearch] = useState("");
   const [exportMenu, setExportMenu] = useState(false);
@@ -308,6 +342,7 @@ export default function RecruiterDashboard() {
 
   const debouncedSkill = useDebounce(skillInput, 200);
   const debouncedGlobal = useDebounce(globalSearch, 180);
+  const debouncedColumnFilters = useDebounce(columnFilters, 180);
 
   // Close export menu on outside click
   useEffect(() => {
@@ -375,6 +410,14 @@ export default function RecruiterDashboard() {
           if (!sel.includes(val)) return false;
         }
       }
+      // Per-column filters
+      for (const col of TABLE_COLS) {
+        const term = String(debouncedColumnFilters[col.key] ?? "").trim().toLowerCase();
+        if (term) {
+          const actual = String(row[col.key] ?? "").toLowerCase();
+          if (!actual.includes(term)) return false;
+        }
+      }
       // Skills filter
       if (skillTerms.length > 0) {
         const skills = String(row["Key Skills"] ?? "").toLowerCase();
@@ -388,7 +431,7 @@ export default function RecruiterDashboard() {
       }
       return true;
     });
-  }, [data, filters, skillTerms, debouncedGlobal]);
+  }, [data, filters, debouncedColumnFilters, skillTerms, debouncedGlobal]);
 
   // Active filter chips
   const activeChips = useMemo(() => {
@@ -397,13 +440,19 @@ export default function RecruiterDashboard() {
       const sel = filters[col] ?? [];
       for (const v of sel) chips.push({ type: "dropdown", label: `${label}: ${v}`, col, val: v });
     }
+    for (const col of TABLE_COLS) {
+      const term = String(columnFilters[col.key] ?? "").trim();
+      if (term) chips.push({ type: "column", label: `${col.label}: ${term}`, col: col.key, term });
+    }
     for (const t of skillTerms) chips.push({ type: "skill", label: `Skill: ${t}`, term: t });
     return chips;
-  }, [filters, skillTerms]);
+  }, [filters, columnFilters, skillTerms]);
 
   function removeChip(chip) {
     if (chip.type === "dropdown") {
       setFilters((f) => ({ ...f, [chip.col]: f[chip.col].filter((v) => v !== chip.val) }));
+    } else if (chip.type === "column") {
+      setColumnFilters((prev) => ({ ...prev, [chip.col]: "" }));
     } else {
       setSkillInput((prev) => {
         const terms = prev.split(",").map((s) => s.trim()).filter((s) => s.toLowerCase() !== chip.term);
@@ -414,6 +463,7 @@ export default function RecruiterDashboard() {
 
   function clearAll() {
     setFilters({ Department: [], Role: [], Industry: [], "Under Graduation degree": [], "UG University/institute Name": [], "Post graduation degree": [] });
+    setColumnFilters(INITIAL_COLUMN_FILTERS);
     setSkillInput("");
     setGlobalSearch("");
   }
@@ -597,7 +647,12 @@ export default function RecruiterDashboard() {
           </div>
 
           {/* Table */}
-          <VirtualTable rows={filteredData} visibleCols={TABLE_COLS} />
+          <VirtualTable
+            rows={filteredData}
+            visibleCols={TABLE_COLS}
+            columnFilters={columnFilters}
+            onColumnFilterChange={(key, value) => setColumnFilters((prev) => ({ ...prev, [key]: value }))}
+          />
         </main>
       </div>
       <style>{`
